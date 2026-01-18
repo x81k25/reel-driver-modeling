@@ -1,3 +1,8 @@
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH =~ /^(dev|stg|main)$/
+
 stages:
   - test
   - build-base
@@ -12,7 +17,7 @@ variables:
   MODEL_TRAINING_CPU: "${CI_REGISTRY_IMAGE}/model-training-cpu"
   MODEL_TRAINING_GPU: "${CI_REGISTRY_IMAGE}/model-training-gpu"
 
-# Test stage
+# Test stage - runs on MR only
 test:
   stage: test
   tags:
@@ -24,7 +29,7 @@ test:
   script:
     - uv run pytest tests/training/test_model_training_unit.py -v --tb=short --confcutdir=tests/training
   rules:
-    - if: $CI_COMMIT_BRANCH =~ /^(dev|stg|main)$/
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 # Kaniko build template
 .kaniko-build:
