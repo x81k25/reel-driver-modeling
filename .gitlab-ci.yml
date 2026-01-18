@@ -1,0 +1,119 @@
+stages:
+  - test
+  - build-base
+  - build-services
+
+variables:
+  # Keep same image names for Dagster compatibility
+  BASE_TRAINING_CPU: "${CI_REGISTRY_IMAGE}/training-base-cpu"
+  BASE_TRAINING_GPU: "${CI_REGISTRY_IMAGE}/training-base-gpu"
+  FEATURE_ENG_CPU: "${CI_REGISTRY_IMAGE}/feature-engineering-cpu"
+  FEATURE_ENG_GPU: "${CI_REGISTRY_IMAGE}/feature-engineering-gpu"
+  MODEL_TRAINING_CPU: "${CI_REGISTRY_IMAGE}/model-training-cpu"
+  MODEL_TRAINING_GPU: "${CI_REGISTRY_IMAGE}/model-training-gpu"
+
+# Test stage
+test:
+  stage: test
+  tags:
+    - k8s
+    - docker
+  image: docker.io/astral/uv:python3.12-bookworm-slim
+  before_script:
+    - uv sync --all-extras
+  script:
+    - uv run pytest tests/training/test_model_training_unit.py -v --tb=short --confcutdir=tests/training
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^(dev|stg|main)$/
+
+# Kaniko build template
+.kaniko-build:
+  tags:
+    - k8s
+    - docker
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^(dev|stg|main)$/
+
+# Base training image (CPU)
+build-base-training-cpu:
+  extends: .kaniko-build
+  stage: build-base
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/containerization/dockerfile.base_training"
+      --destination "${BASE_TRAINING_CPU}:${CI_COMMIT_REF_NAME}"
+      --destination "${BASE_TRAINING_CPU}:sha-${CI_COMMIT_SHORT_SHA}"
+
+# Base training image (GPU)
+build-base-training-gpu:
+  extends: .kaniko-build
+  stage: build-base
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/containerization/dockerfile.base_training_gpu"
+      --destination "${BASE_TRAINING_GPU}:${CI_COMMIT_REF_NAME}"
+      --destination "${BASE_TRAINING_GPU}:sha-${CI_COMMIT_SHORT_SHA}"
+
+# Feature engineering (CPU) - depends on base
+build-feature-engineering-cpu:
+  extends: .kaniko-build
+  stage: build-services
+  needs:
+    - build-base-training-cpu
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/containerization/dockerfile.feature_engineering_cpu"
+      --build-arg "BASE_IMAGE=${BASE_TRAINING_CPU}:${CI_COMMIT_REF_NAME}"
+      --destination "${FEATURE_ENG_CPU}:${CI_COMMIT_REF_NAME}"
+      --destination "${FEATURE_ENG_CPU}:sha-${CI_COMMIT_SHORT_SHA}"
+
+# Feature engineering (GPU) - depends on base
+build-feature-engineering-gpu:
+  extends: .kaniko-build
+  stage: build-services
+  needs:
+    - build-base-training-gpu
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/containerization/dockerfile.feature_engineering_gpu"
+      --build-arg "BASE_IMAGE=${BASE_TRAINING_GPU}:${CI_COMMIT_REF_NAME}"
+      --destination "${FEATURE_ENG_GPU}:${CI_COMMIT_REF_NAME}"
+      --destination "${FEATURE_ENG_GPU}:sha-${CI_COMMIT_SHORT_SHA}"
+
+# Model training (CPU) - depends on base
+build-model-training-cpu:
+  extends: .kaniko-build
+  stage: build-services
+  needs:
+    - build-base-training-cpu
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/containerization/dockerfile.model_training_cpu"
+      --build-arg "BASE_IMAGE=${BASE_TRAINING_CPU}:${CI_COMMIT_REF_NAME}"
+      --destination "${MODEL_TRAINING_CPU}:${CI_COMMIT_REF_NAME}"
+      --destination "${MODEL_TRAINING_CPU}:sha-${CI_COMMIT_SHORT_SHA}"
+
+# Model training (GPU) - depends on base
+build-model-training-gpu:
+  extends: .kaniko-build
+  stage: build-services
+  needs:
+    - build-base-training-gpu
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/containerization/dockerfile.model_training_gpu"
+      --build-arg "BASE_IMAGE=${BASE_TRAINING_GPU}:${CI_COMMIT_REF_NAME}"
+      --destination "${MODEL_TRAINING_GPU}:${CI_COMMIT_REF_NAME}"
+      --destination "${MODEL_TRAINING_GPU}:sha-${CI_COMMIT_SHORT_SHA}"

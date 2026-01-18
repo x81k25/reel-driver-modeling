@@ -1,0 +1,92 @@
+# Production Company Name Normalization Configuration
+#
+# This file defines how production company names should be normalized
+# for feature engineering. The goal is to consolidate variations of
+# the same company into a single canonical name.
+#
+# Structure:
+#   canonical_name:
+#     - variant1
+#     - variant2
+#
+# Note: Matching is case-insensitive and whitespace-normalized
+
+normalization_rules:
+  # 20th Century (Fox renamed after Disney acquisition in 2019)
+  "20th Century Studios":
+    - "20th Century Fox"
+    - "20th Century Fox Animation"
+    - "20th Century Fox Brazil"
+    - "Fox Film Corporation"
+
+  # Warner Bros - consolidate regional/sub-labels to main studio
+  "Warner Bros. Pictures":
+    - "Warner Bros. Entertainment Polska"
+    - "Warner Bros. Film Productions Germany"
+    - "Warner Bros. Pictures Brasil"
+    - "Warner-Pathé Distributors"
+    - "Warner Bros. Cartoons"
+    - "Warner Bros. Animation"
+    - "Warner Bros. Television"
+    - "TVN Warner Bros. Discovery"
+
+  # Universal Pictures - consolidate international variants
+  "Universal Pictures":
+    - "Universal International Pictures"
+    - "Universal Pictures (Australasia)"
+    - "Universal Pictures Content Group"
+    - "Universal Television Alternative Studio"
+    - "Universal Cartoon Studios"
+
+  # Columbia Pictures
+  "Columbia Pictures":
+    - "Columbia TriStar Home Entertainment"
+
+  # Walt Disney Pictures
+  "Walt Disney Pictures":
+    - "Walt Disney Productions"
+    - "Walt Disney Television"
+    - "Disney Branded Television"
+
+  # Amazon Studios - consolidate all Amazon production entities
+  "Amazon Studios":
+    - "Amazon MGM Studios"
+    - "Amazon Studios France"
+    - "Amazon Prime"
+
+  # DreamWorks
+  "DreamWorks Animation":
+    - "DreamWorks Pictures"
+
+  # Lionsgate
+  "Lionsgate":
+    - "Lions Gate Films"
+
+  # HBO
+  "HBO":
+    - "HBO Documentary Films"
+    - "HBO Films"
+    - "HBO Sports"
+
+  # Sony Pictures
+  "Sony Pictures":
+    - "Sony Pictures Entertainment Iberia"
+    - "Sony Pictures Animation"
+    - "Sony Pictures International Productions"
+
+  # Paramount - keep main studio, animation is sub-label
+  "Paramount Pictures":
+    - "Paramount Players"
+    - "Paramount Animation"
+
+  # New Line Cinema
+  "New Line Cinema":
+    - "New Line Home Entertainment"
+
+# Settings for the encoding process
+encoding_settings:
+  # Maximum number of companies to one-hot encode (top N by frequency)
+  max_categories: 100
+
+  # Minimum occurrence threshold (companies below this are grouped as "other")
+  min_occurrences: 3

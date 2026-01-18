@@ -1,0 +1,35 @@
+[project]
+name = "reel-driver-modeling"
+version = "0.9"
+requires-python = ">=3.12,<3.13"
+
+# Core dependencies needed by training components
+dependencies = [
+    "adbc-driver-postgresql>=1.7.0",
+    "loguru>=0.7.3",
+    "mlflow==2.22.1",
+    "pandas>=2.3.1",
+    "polars>=1.31.0",
+    "pyarrow>=4.0.0,<20",
+    "python-dotenv>=1.0.0",
+    "xgboost>=3.0.2",
+]
+
+[project.optional-dependencies]
+# /src/training/feature_engineering.py dependencies
+feature-engineering = [
+    "pyyaml>=6.0.0",
+]
+
+# /src/training/model_training.py dependencies
+model-training = [
+    "numpy>=2.3.1",
+    "optuna>=4.4.0",
+    "optuna-integration[xgboost]>=4.4.0",
+    "scikit-learn>=1.7.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+]

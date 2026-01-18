@@ -1,0 +1,8 @@
+ARG BASE_IMAGE=ghcr.io/x81k25/reel-driver/reel-driver-training-base-gpu:latest
+FROM ${BASE_IMAGE}
+
+# Install model-training specific dependencies
+RUN /root/.local/bin/uv sync --frozen --no-dev --extra model-training
+
+# Set the entrypoint to run model training with GPU
+ENTRYPOINT ["python", "-c", "from src.training.model_training import __main__; __main__()"]

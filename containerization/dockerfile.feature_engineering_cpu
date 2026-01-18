@@ -1,0 +1,8 @@
+ARG BASE_IMAGE=ghcr.io/x81k25/reel-driver/reel-driver-training-base-cpu:latest
+FROM ${BASE_IMAGE}
+
+# Install feature-engineering specific dependencies
+RUN /root/.local/bin/uv sync --frozen --no-dev --extra feature-engineering
+
+# Set the entrypoint to run feature engineering
+ENTRYPOINT ["python", "-c", "from src.training.feature_engineering import __main__; __main__()"]

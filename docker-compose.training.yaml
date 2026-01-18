@@ -1,0 +1,82 @@
+services:
+  # ===================
+  # GPU Services
+  # ===================
+  feature-engineering-gpu:
+    build:
+      context: .
+      dockerfile: ./containerization/dockerfile.feature_engineering_gpu
+      args:
+        BASE_IMAGE: reel-driver-training-base-gpu:latest
+    image: reel-driver-feature-engineering-gpu:latest
+    container_name: feature-engineering-gpu
+    env_file:
+      - .env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - training-network
+    profiles:
+      - gpu
+
+  model-training-gpu:
+    build:
+      context: .
+      dockerfile: ./containerization/dockerfile.model_training_gpu
+      args:
+        BASE_IMAGE: reel-driver-training-base-gpu:latest
+    image: reel-driver-model-training-gpu:latest
+    container_name: model-training-gpu
+    env_file:
+      - .env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - training-network
+
+  # ===================
+  # CPU Services (fallback)
+  # ===================
+  feature-engineering-cpu:
+    build:
+      context: .
+      dockerfile: ./containerization/dockerfile.feature_engineering_cpu
+      args:
+        BASE_IMAGE: reel-driver-training-base-cpu:latest
+    image: reel-driver-feature-engineering-cpu:latest
+    container_name: feature-engineering-cpu
+    env_file:
+      - .env
+    networks:
+      - training-network
+    profiles:
+      - cpu
+
+  model-training-cpu:
+    build:
+      context: .
+      dockerfile: ./containerization/dockerfile.model_training_cpu
+      args:
+        BASE_IMAGE: reel-driver-training-base-cpu:latest
+    image: reel-driver-model-training-cpu:latest
+    container_name: model-training-cpu
+    env_file:
+      - .env
+    networks:
+      - training-network
+    profiles:
+      - cpu
+
+networks:
+  training-network:
+    driver: bridge
